@@ -26,7 +26,8 @@ from obspy.core.inventory import Inventory, Network, Station, Channel, Site
 Dic21=False
 Hs21=False
 Mar22=False
-Sept22=True
+Sept22=False
+Dic22=True
 
 
 path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/'
@@ -43,6 +44,9 @@ if Mar22:
 if Sept22:
     path+='Sept22/'
     nw='SD'
+if Dic22:
+    path+='Dic22/'
+    nw='SE'
 files=os.listdir(path)
 fs=512
 mseeds=sorted([x for x in files if '.mseed' in x])
@@ -61,7 +65,8 @@ equipos=['E1','E2','E3','E4','E5'] # Sept 22
 #meds=['M1B','M2A','M3B','M4','M6B','M6C','M7A','M8A','M9A','M10A','M11A'] ## dic 21
 #meds=['M1P','M2P','M3P','M4P','M5P','M6P','M7P']
 #meds=['Lin_1_20','Lin_2_20','Rect_1_27']
-meds=['ARR1A','ARR1B','ARR1C','ARR2A','ARR2B','ARR2C','ARR3A','ARR3B','ARR3C','ARR3D'] # p1
+#meds=['ARR1A','ARR1B','ARR1C','ARR2A','ARR2B','ARR2C','ARR3A','ARR3B','ARR3C','ARR3D'] # p1
+meds=['MED1A','MED1B'] ## dic22
 
 #meds=['ARR2A','ARR2B','ARR2C'] # p2
 #meds=['ARR3A','ARR3B','ARR3C','ARR3D'] #p3
@@ -70,7 +75,7 @@ nodos=np.loadtxt(path+'nodos.txt').T ## mar 22, HS21, Sept 22
 inv = Inventory(networks=[], source='Seba_LP')
 net = Network(code=nw,
               stations=[],
-              description="Sept 22 arrays.",
+              description="Dict 22 arrays.",
               start_date=obspy.UTCDateTime(2016, 1, 2))
 stream=stream_o.copy()
 c=0

@@ -26,16 +26,25 @@ from collections import Counter
 from obspy.core.inventory import Inventory, Network, Station, Channel, Site
 import cc_processing as cc
 step0=False ## read each mseed and obtain coherence function
-step1=False ## create .txt with coherences
+step1=True ## create .txt with coherences
 step2=False ## test each coherence to find proper freq. limits
 step2d5=False
-step3=True ## run all coherences with correct freq. limits
+step3=False ## run all coherences with correct freq. limits
 
 
-Dic21=True
+Dic21=False
 Hs21=False
 Mar22=False
 Sept22=False
+Dic22=True
+from scipy import signal
+from scipy.fftpack import fft, fftshift
+import matplotlib.pyplot as plt
+
+
+
+
+
 
 path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/'
 
@@ -53,6 +62,11 @@ if Mar22:
 
 if Sept22:
     path+='Sept22/STACKS/'
+    nw='SD'
+
+if Dic22:
+    path += 'Dic22/STACKS/'
+    nw = 'SE'
 
 files=sorted(os.listdir(path))
 coordenadas=np.loadtxt(path[:-7]+'coords_all.txt')
@@ -92,7 +106,7 @@ if step1:
 
     fs = 512
 
-    nsegs = 45
+    nsegs = 30
     files = files[:nf]
     n=0
     for file in files:
@@ -103,6 +117,8 @@ if step1:
         print(len(stream[0]))
         ND = [x.stats.station for x in stream]
         f,coh,cohp=fl.cross_coherence(stream,fs,nsegs,ND,norm='1bit',onesided=False)
+        #xd=fl.cross_coherence(stream,fs,nsegs,ND,norm='1bit',onesided=False)
+
         idx = np.where((f <= 64))[0]
         plt.plot(f[idx],coh[idx],'k',linewidth=2)
         plt.xlabel('Frequency [Hz] r='+str(dist))
@@ -113,9 +129,9 @@ if step1:
         n+=1
 if step2:
     # read i-th coherence file
-    i = 3
-    f1 =4.5
-    f2 =23.5
+    i = 0
+    f1 =6
+    f2 =26
 
     cps = []
     fxs = []
@@ -130,9 +146,9 @@ if step2:
     smooth_factor = 100
 
     CC_smooth=cc.smooth(coh,smooth_factor)
-    plt.plot(f,coh)
+    #plt.plot(f,coh)
 
-    plt.plot(f,CC_smooth)
+    #plt.plot(f,CC_smooth)
 
     p1 = coordenadas[i][0:2]
     p2=coordenadas[i][2:4]
@@ -167,7 +183,9 @@ if step3:
     fxs=[]
     wnews=[]
     nf=100
-    lims = np.loadtxt(path[:-7] + 'lims_cc_new_2.txt')
+    #lims = np.loadtxt(path[:-7] + 'lims_cc_new_2.txt') ## dic21
+    lims = np.loadtxt(path[:-7] + 'lims_cc_new.txt') ## mar22,hs21
+
     idx=np.where(lims[:,4]> 1e-8)
 
     cohs_new=['par'+str(x).zfill(2)+'.txt' for x in idx[0] ]

@@ -7,8 +7,10 @@ sept22=True
 dic21=True
 mar22=True
 alf21=True
-dic21b=True
-mar22b=True
+dic21b=False
+mar22b=False
+dic22=True
+
 if mar22b:
     MED = 'M1'
     path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/SUR2B/' + MED + '/'
@@ -826,5 +828,43 @@ if alf21:
         plt.plot(x[:,0],x[:,1],'mo')
 
     plt.xlim([-20,40])
+    #plt.savefig('ALL_COMBINATIONS.png',dpi=300,bbox_inches='tight')
+    np.savetxt(path + 'coords_' + MED + '.txt', coords)
+
+if dic22:
+    MED = 'MED1A'
+    path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/LP_DIC22/' + MED + '/'
+    E1=[0.0,-20.2] ## correcto
+    E2=[13.7,-20.2]
+    E3=[0.0,-12.0]
+    E4=[13.7,-12.0] # correcto
+    E5=[6.85,-16.1]
+
+    coords=np.vstack((E1,E2,E3,E4,E5))
+    combs = list(itertools.combinations(coords, 2))
+    for x in combs:
+        x=np.vstack(x)
+        #plt.plot(x[:,0],x[:,1],'mo-')
+        plt.plot(x[:,0],x[:,1],'co')
+
+    np.savetxt(path+'coords_'+MED+'.txt',coords)
+
+    MED = 'MED1B'
+    path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/LP_DIC22/' + MED + '/'
+    E1 = [27.4, -20.2]  ## correcto
+    E2 = [13.6, -20.2]
+    E3 = [27.4, -12.0]
+    E4 = [13.7, -12.0]  # correcto
+    E5 = [20.55, -16.1]
+
+    coords = np.vstack((E1, E2, E3, E4, E5))
+    combs = list(itertools.combinations(coords, 2))
+    for x in combs:
+        x = np.vstack(x)
+        #plt.plot(x[:, 0], x[:, 1], 'mo-')
+        plt.plot(x[:,0],x[:,1],'co')
+
+    np.savetxt(path + 'coords_' + MED + '.txt', coords)
+
     plt.savefig('ALL_COMBINATIONS.png',dpi=300,bbox_inches='tight')
     np.savetxt(path + 'coords_' + MED + '.txt', coords)

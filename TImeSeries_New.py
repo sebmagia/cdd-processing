@@ -22,7 +22,7 @@ import scipy.sparse as scsp
 from scipy.linalg import block_diag
 from scipy.sparse.linalg import bicg,LinearOperator,aslinearoperator
 ## step_1, fixing data delays
-MED='ARR2A'
+MED='LP_DIC22/MED1B'
 nw='3D'
 path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/'+MED+'/'
 fs = 512
@@ -56,7 +56,7 @@ if step_1:
         f2,C2=fl.raw_coherence(data_new,fs)
         print('coherence 2 done')
     # ## save fixed
-        np.savetxt(path+'SynchronizedZ_fix.dat',data_new)
+        #np.savetxt(path+'SynchronizedZ_fix.dat',data_new)
 
 ## step 2, generate mseed
 #step_2=False
@@ -77,6 +77,7 @@ if step_2:
     #stream=obspy.Stream(traces=[trace1,trace2,trace3,trace4])
 
     stream=obspy.Stream(traces=[trace1,trace2,trace3,trace4,trace5])
+    MED='MED1B'
     stream.write(path+MED+'.mseed',format='MSEED')
 
 ## generate cross_correlations

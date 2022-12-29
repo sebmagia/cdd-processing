@@ -321,12 +321,11 @@ def cross_coherence(st,fs,s,stations,norm=None,onesided=True):
 
     sig1=st.select(station=stations[0])[0]
     #sig1.decimate(4)
-    #sig1.filter('highpass',freq=2.5)
+    sig1.filter('highpass',freq=0.9,corners=2)
     #sig1.filter('bandpass',freqmin=2.5,freqmax=40.0)
 
     sig2=st.select(station=stations[1])[0]
-    #sig2.filter('highpass',freq=2.5)
-
+    sig2.filter('highpass',freq=0.9,corners=2)
     #sig2.decimate(4)
 
     #sig2.filter('bandpass',freqmin=2.5,freqmax=40.0)
@@ -334,8 +333,9 @@ def cross_coherence(st,fs,s,stations,norm=None,onesided=True):
     print('pre',type(sig1),type(sig2))
 
     size=int(fs*s)
-    step=int(size/4)
-    W=tukey(size,alpha=0.01)
+    step=int(size/2)
+    ## alpha=0.1 yields 5% taper at each end
+    W=tukey(size,alpha=0.1)
     if norm == '1bit':
         sig1=np.sign(sig1)
         sig2=np.sign(sig2)
