@@ -26,10 +26,10 @@ from collections import Counter
 from obspy.core.inventory import Inventory, Network, Station, Channel, Site
 import cc_processing as cc
 step0=False ## read each mseed and obtain coherence function
-step1=True ## create .txt with coherences
+step1=False ## create .txt with coherences
 step2=False ## test each coherence to find proper freq. limits
 step2d5=False
-step3=False ## run all coherences with correct freq. limits
+step3=True ## run all coherences with correct freq. limits
 
 
 Dic21=False
@@ -106,7 +106,7 @@ if step1:
 
     fs = 512
 
-    nsegs = 30
+    nsegs = 60
     files = files[:nf]
     n=0
     for file in files:
@@ -129,9 +129,11 @@ if step1:
         n+=1
 if step2:
     # read i-th coherence file
-    i = 0
-    f1 =6
+    i = 18
+    f1 =4
     f2 =26
+    f3 =26
+    smooth_factor = 100
 
     cps = []
     fxs = []
@@ -143,7 +145,6 @@ if step2:
     interp=interpolate.interp1d(f,coh,kind='cubic')
     coh2=interp(fnew)
     ## define proper frequency limits and smooth factor
-    smooth_factor = 100
 
     CC_smooth=cc.smooth(coh,smooth_factor)
     #plt.plot(f,coh)
@@ -156,19 +157,26 @@ if step2:
                                                                                       i, coord_uni, np.vstack((p1,p2)),
                                                                                       create_figures=False)
 
-    vmin=50
-    vmax=800
-    zero_crossings = np.where(np.diff(np.sign(CCX_smooth)))[0]
+    idx2=np.where(fx <=f3)
+    fx2=fx[idx2]
+    CCX2_smooth=CCX_smooth[idx2]
+    rho_pre2=rho_pre[idx2]
+    c_est2=c_est[idx2]
+    zcs2=[x for x in zcs if x<= idx2[0][-1]]
+    wzero2=wzero[:len(zcs2)]
 
-    vv=np.arange(50,810,10)
-    feval=jv(0,fx/(2*np.pi)*r/vv[0])
+
+
     sigmad=1
     sigma=1
     alpha=1
-    rhop, cp, Ap, H2, CM,err=cc.get_dispersion_curve_newton(fx*2*np.pi, dist,rho_pre, CCX_smooth, fxp,CCXp,CCXp_smooth, c_est, A_est, sigmad, sigma,
-                                                        alpha,i, coord_uni, np.vstack((p1,p2)),wzero,zcs)
+    rhop, cp, Ap, H2, CM, err = cc.get_dispersion_curve_newton(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp, CCXp,
+                                                               CCXp_smooth, c_est2, A_est, sigmad, sigma,
+                                                               alpha, i, coord_uni, np.vstack((p1, p2)), wzero2, zcs2)
+    #rhop, cp, Ap, H2, CM,err=cc.get_dispersion_curve_newton(fx*2*np.pi, dist,rho_pre, CCX_smooth, fxp,CCXp,CCXp_smooth, c_est, A_est, sigmad, sigma,
+    #                                                    alpha,i, coord_uni, np.vstack((p1,p2)),wzero,zcs)
 
-    lembdas=cp/fx
+    lembdas=cp/fx2
     print('dist',dist)
     print('lambdamax',lembdas[0])
     print('lambdamin',lembdas[-1])
@@ -186,7 +194,7 @@ if step3:
     #lims = np.loadtxt(path[:-7] + 'lims_cc_new_2.txt') ## dic21
     lims = np.loadtxt(path[:-7] + 'lims_cc_new.txt') ## mar22,hs21
 
-    idx=np.where(lims[:,4]> 1e-8)
+    idx=np.where(lims[:,3]> 1e-8)
 
     cohs_new=['par'+str(x).zfill(2)+'.txt' for x in idx[0] ]
     lims=lims[:nf]
@@ -204,8 +212,9 @@ if step3:
         Cx=coh[idx]
         f1=lim[1]
         f2=lim[2]
-        dist=lim[3]
-        smooth_factor=lim[4]
+        f3=lim[3]
+        dist=lim[4]
+        smooth_factor=lim[5]
         #smooth_factor
         sigma_d=1 ## varianza de los datos
         #sigma_D=np.logspace(-4,4,80)
@@ -222,18 +231,35 @@ if step3:
                                                                                                       create_figures=False)
 
 
+
+
+        idx2 = np.where(fx <= f3)
+        fx2 = fx[idx2]
+        CCX2_smooth = CCX_smooth[idx2]
+        rho_pre2 = rho_pre[idx2]
+        c_est2 = c_est[idx2]
+        zcs2 = [x for x in zcs if x <= idx2[0][-1]]
+        wzero2 = wzero[:len(zcs2)]
+
         sigmad = 1
         sigma = 1
         alpha = 1
+        rhop, cp, Ap, H2, CM, err = cc.get_dispersion_curve_newton(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp,
+                                                                   CCXp,
+                                                                   CCXp_smooth, c_est2, A_est, sigmad, sigma,
+                                                                   alpha, n, coord_uni, np.vstack((p1, p2)), wzero2,
+                                                                   zcs2)
+        # rhop, cp, Ap, H2, CM,err=cc.get_dispersion_curve_newton(fx*2*np.pi, dist,rho_pre, CCX_smooth, fxp,CCXp,CCXp_smooth, c_est, A_est, sigmad, sigma,
+        #                                                    alpha,i, coord_uni, np.vstack((p1,p2)),wzero,zcs)
 
-        rhop, cp, Ap, H2, CM,err = cc.get_dispersion_curve_newton(fx * 2 * np.pi, dist, rho_pre, CCX_smooth, fxp,
-                                                              CCXp, CCXp_smooth, c_est, A_est,sigmad, sigma, alpha,
-                                                               n, coord_uni, np.vstack((p1, p2)),wzero,zcs)
+        lembdas = cp / fx2
+        # rhop, cp, Ap, H2, CM,err = cc.get_dispersion_curve_newton(fx * 2 * np.pi, dist, rho_pre, CCX_smooth, fxp,
+        #                                                       CCXp, CCXp_smooth, c_est, A_est,sigmad, sigma, alpha,
+        #                                                        n, coord_uni, np.vstack((p1, p2)),wzero,zcs)
         print('dist', dist)
-        #rhop, cp, wnew, Ap, H2, CM, rho_grid = cc.get_dispersion_curve(fx, Cx, dist, sigma_d, sigma_D, sigma_A, n,coord_uni,np.vstack((p1,p2)),True)
         n+=1
         cps.append(cp)
-        wnews.append(fx*2*np.pi)
+        wnews.append(fx2*2*np.pi)
 
 
     fig,ax=plt.subplots()

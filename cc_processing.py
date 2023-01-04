@@ -266,15 +266,17 @@ def get_dispersion_curve_newton(w,r,rho_0,rho_obs,f_full,rhofull_noise,rhofull_s
         ax4 = fig.add_subplot(gs[-1, 1])
         mat=ax4.imshow(CM,cmap='jet')
         fig.colorbar(mat,ax=ax4)
+        #folder='AJUSTES_DIC21'
         #folder='AJUSTES_MAR22'
         #folder='AJUSTES_HS21'
-        folder='AJUSTES_SEPT22'
+        #folder='AJUSTES_SEPT22'
+        folder='AJUSTES_DIC22'
         plt.savefig(folder+'/ajuste'+str(ii).zfill(2)+'.png', format='png', dpi=300, bbox_inches='tight')
         e1=(p12[0,0],p12[0,1])
         e2=(p12[1,0],p12[1,1])
 
         np.savetxt(folder+'/cdd'+str(ii).zfill(2)+'.csv',np.vstack((w/(2*np.pi),cp,np.diag(CM)[0:-1])).T,fmt=['%3.3f','%3.3f','%3.3f'],header='Frequency,Velocity,Velstd \n coords,'+str(e1)+','+str(e2),delimiter=',')
-        #plt.close()
+        plt.close()
         fig,ax=plt.subplots()
         ax.plot(f_full, rhofull_noise, 'k', linewidth=2, label='target noisy')
         ax.plot(f_full, rhofull_smooth, 'r', linewidth=2, label='target smoothed')
@@ -287,7 +289,7 @@ def get_dispersion_curve_newton(w,r,rho_0,rho_obs,f_full,rhofull_noise,rhofull_s
         ax.set_xlabel('Frequency (Hz)  ' +texto)
         ax.set_ylabel('Amplitude')
         plt.savefig(folder+'/ajuste_cc'+str(ii).zfill(2)+'.png', format='png', dpi=300, bbox_inches='tight')
-        #plt.close()
+        plt.close()
         ax.legend()
 
         #return rhop,cp,wnew,Ap,H2,CM,rho_grid
@@ -420,7 +422,7 @@ def get_dispersion_curve2(f,CC,r,smooth_factor,f1,f2,ii,coord_uni,p12,create_fig
     #CCX_smooth=smooth(CCX,smooth_factor)
     ## lims for plotting at the end
     f1p=1
-    f2p=35
+    f2p=50
     idxp=np.where((f >=f1p) & (f <=f2p))[0]
     fxp=f[idxp]
     CCXp=CC[idxp]
