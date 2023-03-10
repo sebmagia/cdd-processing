@@ -49,27 +49,53 @@ import matplotlib.pyplot as plt
 path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/'
 
 if Dic21:
-    path+='Dic21/STACKS/'
+    carpeta='dic21'
+    #path+='Dic21/STACKS/'
+    path+='Dic21/STACKS_2/'
+
+    #path+='Dic21_new/STACKS/'
+
     path2='/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/Dic21/M1B.mseed'
     path3='/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/Dic21/M2A.mseed'
     nw='SA'
 if Hs21:
-    path+='HS21/STACKS/'
+    carpeta='hs21'
+
+    #path+='HS21/STACKS/'
+    path+='HS21/STACKS_2/'
     nw='SB'
 if Mar22:
-    path+='Mar22/STACKS/'
+    carpeta='mar22'
+    #path+='Mar22/STACKS_2/'
+
+    path+='Mar22/STACKS_2/'
     nw='SC'
 
 if Sept22:
-    path+='Sept22/STACKS/'
+    carpeta='sept22'
+    #path='Sept22/STACKS/'
+
+    path+='Sept22/STACKS_2/'
     nw='SD'
 
 if Dic22:
-    path += 'Dic22/STACKS/'
+    carpeta='dic22'
+    #path += 'Dic22/STACKS/'
+
+    path += 'Dic22/STACKS_2/'
     nw = 'SE'
 
 files=sorted(os.listdir(path))
-coordenadas=np.loadtxt(path[:-7]+'coords_all.txt')
+#coordenadas=np.loadtxt(path[:-7]+'coords_all.txt')
+coordenadas=np.loadtxt(path[:-9]+'coords_all2.txt')
+distancias=[]
+
+for x in coordenadas:
+    distancias.append(np.sqrt((x[0] - x[2]) ** 2 + (x[1] - x[3]) ** 2))
+
+np.savetxt(path[:-9]+'distancias.txt',np.array(distancias),fmt='%2.2f')
+values=np.genfromtxt(path[:-9]+'values_separado.txt',dtype=str)
+
 coord_split=np.split(coordenadas,2,axis=1)
 coord_uni=np.unique(np.vstack((coord_split[0],coord_split[1])),axis=0)
 cohs=[x for x in files if '.txt' in x]
@@ -80,7 +106,7 @@ if step0:
     i=0
     dist=np.sqrt((coordenadas[i][0]-coordenadas[i][2])**2+(coordenadas[i][1]-coordenadas[i][3])**2)
     fs = 512
-    nsegs = 60
+    nsegs = 45
     file=files[i]
     stream= obspy.read(path + file, format='MSEED')
     stream.decimate(1)
@@ -102,7 +128,7 @@ if step0:
 
 n=0
 if step1:
-    nf = 100
+    nf = 120
 
     fs = 512
 
@@ -120,24 +146,45 @@ if step1:
         #xd=fl.cross_coherence(stream,fs,nsegs,ND,norm='1bit',onesided=False)
 
         idx = np.where((f <= 64))[0]
+        CC_smooth_50 = cc.smooth(coh, 50)
+        CC_smooth_75 = cc.smooth(coh, 75)
+        CC_smooth_100 = cc.smooth(coh, 100)
+        CC_smooth_150 = cc.smooth(coh, 150)
+        CC_smooth_200 = cc.smooth(coh, 200)
+
         plt.plot(f[idx],coh[idx],'k',linewidth=2)
-        plt.xlabel('Frequency [Hz] r='+str(dist))
+        plt.plot(f[idx], CC_smooth_50[idx], 'c', label='50')
+        plt.plot(f[idx], CC_smooth_75[idx], 'm', label='75')
+        plt.plot(f[idx],CC_smooth_100[idx],'r',label='100')
+        plt.plot(f[idx],CC_smooth_150[idx],'b',label='150')
+        plt.plot(f[idx],CC_smooth_200[idx],'g',label='200')
+        plt.legend()
+        plt.xlabel('Frequency [Hz] r='+str(dist)+' '+values[n])
         plt.ylabel('Amplitude')
         plt.savefig(path+file[:-5]+'png',format='png', dpi=300, bbox_inches='tight')
         plt.close()
         np.savetxt(path+file[:-5]+'txt',np.vstack((f,coh)).T)
         n+=1
+
 if step2:
     # read i-th coherence file
-    i = 0
-    f1 =5.5
-    f2 =22
-    f3 =19
-    smooth_factor = 200
+    i =46
+    nc=i
+    nfold=i
+    f1 = 7.6
+    f2 = 16.2
+    #f3 =11.7
+    sigmad = 1
+    sigma = 0.75
+    alpha = 1
+    smooth_factor = 100
 
     cps = []
     fxs = []
     dist=np.sqrt((coordenadas[i][0]-coordenadas[i][2])**2+(coordenadas[i][1]-coordenadas[i][3])**2)
+    #dist=16.03
+    #dist=17.46
+    #dist=20
     data=np.loadtxt(path+cohs[i])
     f = data[:, 0]
     coh = data[:, 1]
@@ -147,58 +194,39 @@ if step2:
     ## define proper frequency limits and smooth factor
 
     CC_smooth=cc.smooth(coh,smooth_factor)
-    #plt.plot(f,coh)
+    mediciones = []
 
-    #plt.plot(f,CC_smooth)
-
+    med = values[nfold]
     p1 = coordenadas[i][0:2]
     p2=coordenadas[i][2:4]
-    cms,zcs,wzero,r,jn,c_est,A_est,rho_pre,fx,CCX,CCX_smooth,fxp,CCXp,CCXp_smooth=cc.get_dispersion_curve2(f, coh, dist, smooth_factor, f1, f2,
-                                                                                      i, coord_uni, np.vstack((p1,p2)),
-                                                                                      create_figures=False)
+    cmax=320
+    cmin=90
+    fx, CCX, CCX_smooth, c_combs, ftrial, wtrial, Ab, rho_pre, errb, ccb, cb_int, fxp, CCXp, CCXp_smooth = \
+        cc.get_dispersion_curve2_gs(f, coh, dist, int(smooth_factor), f1, f2,
+                                    cmax, cmin, nc, coord_uni, np.vstack((p1, p2)), create_figures=False)
 
-    idx2=np.where(fx <=f3)
-    fx2=fx[idx2]
-    CCX2_smooth=CCX_smooth[idx2]
-    rho_pre2=rho_pre[idx2]
-    c_est2=c_est[idx2]
-    zcs2=[x for x in zcs if x<= idx2[0][-1]]
-    wzero2=wzero[:len(zcs2)]
-
-
-    std=np.abs(CCX2_smooth-rho_pre2)
-    std=std*np.eye(len(std))
-    std_inv=np.linalg.inv(std)
-    #std_inv=std
-    sigmad=1
-    sigma=0.1
-    alpha=1
-    # H,E,AP,CP,w=cc.get_dispersion_curve_newton_otro(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp, CCXp,
-    #                                CCXp_smooth, c_est2, A_est, sigmad, sigma,
-    #                                alpha, i, coord_uni, np.vstack((p1, p2)), wzero2, zcs2)
+    std = np.abs(CCX_smooth - rho_pre)
+    std = std * np.eye(len(std))
+    std_inv = np.linalg.inv(std)
 
 
 
-    # rhop, cp, Ap, H2, CM, err,G,G1,G2 = cc.get_dispersion_curve_newton(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp, CCXp,
-    #                                                            CCXp_smooth, c_est2, A_est, sigmad, sigma,
-    #                                                            alpha, i, coord_uni, np.vstack((p1, p2)), wzero2, zcs2)
 
 
-    # rhop, cp, Ap, H2, CM, err, G, G1, G2 = cc.get_dispersion_curve_newton22(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth,
-    #                                                                       fxp, CCXp,
-    #                                                                       CCXp_smooth, c_est2, A_est, sigmad, sigma,
-    #                                                                       alpha, i, coord_uni, np.vstack((p1, p2)),
-    #                                                                       wzero2, zcs2, scsp.lil_matrix(std_inv))
-    #rhop, cp, Ap, H2, CM,err=cc.get_dispersion_curve_newton(fx*2*np.pi, dist,rho_pre, CCX_smooth, fxp,CCXp,CCXp_smooth, c_est, A_est, sigmad, sigma,
-    #                                                    alpha,i, coord_uni, np.vstack((p1,p2)),wzero,zcs)
 
-    lembdas=cp/fx2
+    rhop, cp, Ap, H2, CM, err,G,G1,G2 = cc.get_dispersion_curve_newton22(fx * 2 * np.pi, dist, rho_pre, CCX_smooth, fxp, CCXp,
+                                                               CCXp_smooth, cb_int, Ab, sigmad, sigma,
+                                                               alpha, i, nfold,coord_uni, np.vstack((p1, p2)), wtrial, ccb,std_inv,carpeta,med)
+
+
+
+    lembdas=cp/fx
     print('dist',dist)
     print('lambdamax',lembdas[0])
     print('lambdamin',lembdas[-1])
     print('lambda/r',lembdas[0]/dist)
     print('lambda/r',lembdas[-1]/dist)
-
+    #
 
 
 
@@ -208,7 +236,7 @@ if step3:
     wnews=[]
     nf=100
     #lims = np.loadtxt(path[:-7] + 'lims_cc_new_2.txt') ## dic21
-    lims = np.loadtxt(path[:-7] + 'lims_cc_new.txt') ## mar22,hs21
+    lims = np.loadtxt(path[:-7] + 'lims_cc_new_jan.txt') ## mar22,hs21
 
     idx=np.where(lims[:,3]> 1e-8)
 
@@ -231,6 +259,7 @@ if step3:
         f3=lim[3]
         dist=lim[4]
         smooth_factor=lim[5]
+        kind=lims[6]
         #smooth_factor
         sigma_d=1 ## varianza de los datos
         #sigma_D=np.logspace(-4,4,80)
@@ -258,13 +287,18 @@ if step3:
         wzero2 = wzero[:len(zcs2)]
 
         sigmad = 1
-        sigma = 1
+        sigma = 0.5
         alpha = 1
-        rhop, cp, Ap, H2, CM, err = cc.get_dispersion_curve_newton(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp,
+        std = np.abs(CCX2_smooth - rho_pre2)
+        std = std * np.eye(len(std))
+        std_inv = np.linalg.inv(std)
+
+        rhop, cp, Ap, H2, CM, err, G, G1, G2 = cc.get_dispersion_curve_newton22(fx2 * 2 * np.pi, dist, rho_pre2, CCX2_smooth, fxp,
                                                                    CCXp,
                                                                    CCXp_smooth, c_est2, A_est, sigmad, sigma,
                                                                    alpha, n, coord_uni, np.vstack((p1, p2)), wzero2,
-                                                                   zcs2)
+                                                                   zcs2,std_inv,carpeta)
+
         # rhop, cp, Ap, H2, CM,err=cc.get_dispersion_curve_newton(fx*2*np.pi, dist,rho_pre, CCX_smooth, fxp,CCXp,CCXp_smooth, c_est, A_est, sigmad, sigma,
         #                                                    alpha,i, coord_uni, np.vstack((p1,p2)),wzero,zcs)
 
@@ -280,10 +314,16 @@ if step3:
 
     fig,ax=plt.subplots()
     for i in range(len(cps)):
-        ax.plot(wnews[i]/(2*np.pi),cps[i],'k',linewidth=0.5)
+        if kind==1:
+            ax.plot(wnews[i]/(2*np.pi),cps[i],'g',linewidth=0.5)
+        if kind==2:
+            ax.plot(wnews[i]/(2*np.pi),cps[i],'o',linewidth=0.5)
+        if kind==3:
+            ax.plot(wnews[i]/(2*np.pi),cps[i],'r',linewidth=0.5)
+
         ax.text(wnews[i][-1]/(2*np.pi),cps[i][-1],'c'+str(i).zfill(2),fontsize=10)
     plt.show()
-    plt.savefig('AJUSTES/ajuste_todas.png', format='png', dpi=300, bbox_inches='tight')
+    plt.savefig('AJUSTES_NUEVOS/ajuste_todas_'+carpeta+'.png', format='png', dpi=300, bbox_inches='tight')
 
 if step2d5:
     # read i-th coherence file

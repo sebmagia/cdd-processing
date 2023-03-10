@@ -23,54 +23,72 @@ from scipy.linalg import block_diag
 from scipy.sparse.linalg import bicg,LinearOperator,aslinearoperator
 from collections import Counter
 from obspy.core.inventory import Inventory, Network, Station, Channel, Site
-Dic21=True
+Dic21=False
 Hs21=False
 Mar22=False
 Sept22=False
-Dic22=False
+Dic22=True
 
 
 path = '/home/doctor/Doctor/Magister/Tesis/databases/LosPresidentes_0922/MSEEDS/'
 
 if Dic21:
     path+='Dic21/'
-    #path+='Dic21_new/'
+    files = os.listdir(path)
+    mseeds = sorted([x for x in files if '.mseed' in x])
+    mseeds=mseeds[2:]+mseeds[:2] ## dic21
+    coords = sorted([x for x in files if 'coords' in x])
+    coords = coords[2:] + coords[:2]  ## dic21
+    equipos = ['E1', 'E2', 'E3', 'E4', 'E5']
     nw='SA'
+    meds = ['M1B', 'M2A', 'M3B', 'M4', 'M6B', 'M6C', 'M7A', 'M8A', 'M9A', 'M10A', 'M11A']  ## dic 21
+
 if Hs21:
     path+='HS21/'
+    files = os.listdir(path)
     nw='SB'
+    equipos = ['E1', 'E2', 'E3', 'E4', 'E5']
+    meds=['Lin_1_20','Lin_2_20','Rect_1_27'] ## hs21
+    mseeds = sorted([x for x in files if '.mseed' in x])
+    coords = sorted([x for x in files if 'coords' in x])
+
 if Mar22:
     path+='Mar22/'
+    files = os.listdir(path)
     nw='SC'
+    equipos = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6']
+    meds=['M1P','M2P','M3P','M4P','M5P','M6P','M7P'] ## mar22
+    mseeds = sorted([x for x in files if '.mseed' in x])
+    coords = sorted([x for x in files if 'coords' in x])
+
+
 if Sept22:
     path+='Sept22/'
+    files = os.listdir(path)
     nw='SD'
+    equipos = ['E1', 'E2', 'E3', 'E4', 'E5']
+    meds=['ARR1A','ARR1B','ARR1C','ARR2A','ARR2B','ARR2C','ARR3A','ARR3B','ARR3C','ARR3D']
+    mseeds = sorted([x for x in files if '.mseed' in x])
+    coords = sorted([x for x in files if 'coords' in x])
+
 if Dic22:
     path+='Dic22/'
+    files = os.listdir(path)
     nw='SE'
-files=os.listdir(path)
+    equipos = ['E1', 'E2', 'E3', 'E4', 'E5']
+    meds=['MED1A','MED1B'] ## dic22
+    mseeds = sorted([x for x in files if '.mseed' in x])
+    coords = sorted([x for x in files if 'coords' in x])
+
 fs=512
-mseeds=sorted([x for x in files if '.mseed' in x])
-mseeds=mseeds[2:]+mseeds[:2] ## dic21
-coords=sorted([x for x in files if 'coords' in x])
-coords=coords[2:]+coords[:2] ## dic21
 
 coords=[x for x in coords if 'all' not in x]
 stream_o=obspy.read(path+mseeds[0],format='MSEED')
 coord=np.loadtxt(path+coords[0])
-#equipos=['E1','E2','E3','E4','E5'] ## dic 21
-#equipos=['E1','E2','E3','E4','E5','E6'] # mar 22
-equipos=['E1','E2','E3','E4','E5'] # HS 22
-#equipos=['E1','E2','E3','E4','E5'] # Sept 22
 
-#nodos=['N1','N2','N3','N4','N5']
-meds=['M1B','M2A','M3B','M4','M6B','M6C','M7A','M8A','M9A','M10A','M11A'] ## dic 21
-#meds=['M1P','M2P','M3P','M4P','M5P','M6P','M7P'] ## mar22
-#meds=['Lin_1_20','Lin_2_20','Rect_1_27'] ## hs21
-#meds=['ARR1A','ARR1B','ARR1C','ARR2A','ARR2B','ARR2C','ARR3A','ARR3B','ARR3C','ARR3D'] # p1
-#meds=['MED1A','MED1B'] ## dic22
 
-nodos=np.loadtxt(path+'nodos.txt').T ## mar 22, HS21, Sept 22
+
+nodos=np.loadtxt(path+'nodos.txt').T
 inv = Inventory(networks=[], source='Seba_LP')
 net = Network(code=nw,
               stations=[],
@@ -120,15 +138,18 @@ stack1 = None
 stack2 = None
 keystack=[]
 valuestack=[]
-coords=np.zeros((len(set(combs_flat)),4))
+#coords=np.zeros((len(set(combs_flat)),4))
+coords=np.zeros((len(combs_flat),4))
+valores=[]
 for key,values in zip(dicc.keys(),dicc.values()):
     print(key,values)
     keystack.append(key)
     valuestack.append(values)
     if len(values)>1:
-        del stack1
-        del stack2
+        #del stack1
+        #del stack2
         for x in values:
+            valores.append(x)
             idx_a=net_names.index(x)
             print('foo')
             #print('foo',inv[idx_a])
@@ -147,27 +168,28 @@ for key,values in zip(dicc.keys(),dicc.values()):
             #print('bar',inv[idx_a].stations[idx_b1],inv[idx_a].stations[idx_b2])
             trace1=obspy.read(path + x+'.mseed', format='MSEED')[idx_b1].data
             trace2=obspy.read(path + x+'.mseed', format='MSEED')[idx_b2].data
+            tr1 = obspy.Trace(data=trace1, header={'sampling_rate': fs, 'station': 'A'})
+            tr2 = obspy.Trace(data=trace2, header={'sampling_rate': fs, 'station': 'B'})
+            st = obspy.Stream(traces=[tr1, tr2])
+            # xtream+=st
+            st.write(path + 'STACKS_2/par' + str(k).zfill(3) + '.mseed', format='MSEED')
+            k += 1
             #print('len',trace1.shape,trace2.shape)
 
-            try:
-                stack1 = np.hstack((stack1, trace1))
-                stack2 = np.hstack((stack2, trace2))
-                #coordinates= np.vstack((coordinates,arr))
-            except NameError:
-                print('exc')
-                stack1 = trace1
-                stack2 = trace2
+            # try:
+            #     stack1 = np.hstack((stack1, trace1))
+            #     stack2 = np.hstack((stack2, trace2))
+            #     #coordinates= np.vstack((coordinates,arr))
+            # except NameError:
+            #     print('exc')
+            #     stack1 = trace1
+            #     stack2 = trace2
                 #coordinates = arr
         #print(coordinates)
-        tr1 = obspy.Trace(data=stack1, header={'sampling_rate': fs, 'station': 'A'})
-        tr2 = obspy.Trace(data=stack2, header={'sampling_rate': fs, 'station': 'B'})
-        st=obspy.Stream(traces=[tr1,tr2])
-        #xtream+=st
-        st.write(path+'STACKS/par'+str(k).zfill(2)+'.mseed',format='MSEED')
-        k+=1
     else:
-        del stack1
-        del stack2
+        #del stack1
+        #del stack2
+        valores.append(values[0])
         idx_a = net_names.index(values[0])
         print('koo')
         #print('koo', inv[idx_a])
@@ -187,21 +209,11 @@ for key,values in zip(dicc.keys(),dicc.values()):
         trace1 = obspy.read(path + values[0] + '.mseed', format='MSEED')[idx_b1].data
         trace2 = obspy.read(path + values[0] + '.mseed', format='MSEED')[idx_b2].data
 
-        try:
-            stack1 = np.hstack((stack1, trace1))
-            stack2 = np.hstack((stack2, trace2))
-            #coordinates = np.vstack((coordinates, arr))
 
-        except NameError:
-            #print('exc')
-            stack1 = trace1
-            stack2 = trace2
-            #coordinates = arr
-
-        tr1 = obspy.Trace(data=stack1, header={'sampling_rate': fs, 'station': 'A'})
-        tr2 = obspy.Trace(data=stack2, header={'sampling_rate': fs, 'station': 'B'})
+        tr1 = obspy.Trace(data=trace1, header={'sampling_rate': fs, 'station': 'A'})
+        tr2 = obspy.Trace(data=trace2, header={'sampling_rate': fs, 'station': 'B'})
         st = obspy.Stream(traces=[tr1, tr2])
-        st.write(path+'STACKS/par'+str(k).zfill(2)+'.mseed',format='MSEED')
+        st.write(path+'STACKS_2/par'+str(k).zfill(3)+'.mseed',format='MSEED')
 
         #xtream += st
         k+=1
@@ -216,6 +228,11 @@ with open(path+'values_nodes.txt','w') as fileobject:
         for y in x:
             fileobject.write(y+' ')
         fileobject.write('\n')
+with open(path+'values_separado.txt','w') as fileobject:
+    for x in valores:
+        fileobject.write(x)
+        fileobject.write('\n')
+
 coords1=np.split(coords,2,axis=1)[0]
 coords2=np.split(coords,2,axis=1)[1]
 

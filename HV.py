@@ -37,6 +37,8 @@ with open(path+'SSHV/single_station_coords.txt','w') as fileobject:
     for x,y in zip(strings,coordenadas):
         fileobject.write(x+','+str(np.round(y[0],2))+','+str(np.round(y[1],2)))
         fileobject.write('\n')
+
+
         #streams.append(streamnew)
 #stream=obspy.read('UT.STN11.A2_C50.miniseed',format='MSEED')
 
